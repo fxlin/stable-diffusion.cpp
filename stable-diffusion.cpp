@@ -69,7 +69,7 @@ public:
 
     std::shared_ptr<FrozenCLIPEmbedderWithCustomWords> cond_stage_model;
     std::shared_ptr<FrozenCLIPVisionEmbedder> clip_vision;  // for svd
-    std::shared_ptr<UNetModel> diffusion_model;
+    std::shared_ptr<UNetModel> diffusion_model;     // xzl: THE model...
     std::shared_ptr<AutoEncoderKL> first_stage_model;
     std::shared_ptr<TinyAutoEncoder> tae_first_stage;
     std::shared_ptr<ControlNet> control_net;
@@ -444,6 +444,7 @@ public:
         curr_lora_state = lora_state;
     }
 
+    // xzl: wht's this for... return a pair of tensors?
     std::pair<ggml_tensor*, ggml_tensor*> get_learned_condition(ggml_context* work_ctx,
                                                                 const std::string& text,
                                                                 int clip_skip,
@@ -693,6 +694,7 @@ public:
         }
         struct ggml_tensor* denoised = ggml_dup_tensor(work_ctx, x);
 
+        // xzl: this is one denois step....
         auto denoise = [&](ggml_tensor* input, float sigma, int step) {
             if (step == 1) {
                 pretty_progress(0, (int)steps, 0);
@@ -765,7 +767,7 @@ public:
             float* vec_input     = (float*)input->data;
             float* positive_data = (float*)out_cond->data;
             int ne_elements      = (int)ggml_nelements(denoised);
-            for (int i = 0; i < ne_elements; i++) {
+            for (int i = 0; i < ne_elements; i++) {     // xzl: go through all elements???
                 float latent_result = positive_data[i];
                 if (has_unconditioned) {
                     // out_uncond + cfg_scale * (out_cond - out_uncond)
@@ -788,13 +790,13 @@ public:
             }
         };
 
-        // sample_euler_ancestral
+        // sample_euler_ancestral               xzl: all kinds of schedulers...
         switch (method) {
             case EULER_A: {
                 struct ggml_tensor* noise = ggml_dup_tensor(work_ctx, x);
                 struct ggml_tensor* d     = ggml_dup_tensor(work_ctx, x);
 
-                for (int i = 0; i < steps; i++) {
+                for (int i = 0; i < steps; i++) {   // xzl: sample loop
                     float sigma = sigmas[i];
 
                     // denoise
@@ -1336,6 +1338,7 @@ void free_sd_ctx(sd_ctx_t* sd_ctx) {
     free(sd_ctx);
 }
 
+// xzl: main entry...
 sd_image_t* txt2img(sd_ctx_t* sd_ctx,
                     const char* prompt_c_str,
                     const char* negative_prompt_c_str,
@@ -1377,7 +1380,7 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
     params.mem_size += width * height * 3 * sizeof(float);
     params.mem_size *= batch_count;
     params.mem_buffer = NULL;
-    params.no_alloc   = false;
+    params.no_alloc   = false;  // xzl: alloc on the way... 
     // LOG_DEBUG("mem_size %u ", params.mem_size);
 
     struct ggml_context* work_ctx = ggml_init(params);
@@ -1395,6 +1398,7 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
     }
 
     t0                            = ggml_time_ms();
+    // xzl: conditional pair... with prompt (why pair)
     auto cond_pair                = sd_ctx->sd->get_learned_condition(work_ctx, prompt, clip_skip, width, height);
     ggml_tensor* c                = cond_pair.first;
     ggml_tensor* c_vector         = cond_pair.second;  // [adm_in_channels, ]
@@ -1405,6 +1409,7 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
         if (sd_ctx->sd->version == VERSION_XL && negative_prompt.size() == 0) {
             force_zero_embeddings = true;
         }
+        // xzl: with neg prompt ...
         auto uncond_pair = sd_ctx->sd->get_learned_condition(work_ctx, negative_prompt, clip_skip, width, height, force_zero_embeddings);
         uc               = uncond_pair.first;
         uc_vector        = uncond_pair.second;  // [adm_in_channels, ]
@@ -1419,10 +1424,10 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
     struct ggml_tensor* image_hint = NULL;
     if (control_cond != NULL) {
         image_hint = ggml_new_tensor_4d(work_ctx, GGML_TYPE_F32, width, height, 3, 1);
-        sd_image_to_tensor(control_cond->data, image_hint);
+        sd_image_to_tensor(control_cond->data, image_hint); // xzl: make iput image to "imag_hint" tensor.
     }
 
-    std::vector<struct ggml_tensor*> final_latents;  // collect latents to decode
+    std::vector<struct ggml_tensor*> final_latents;  // collect latents to decode   xzl: why a series ?
     int C = 4;
     int W = width / 8;
     int H = height / 8;
@@ -1436,7 +1441,7 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
         struct ggml_tensor* x_t = ggml_new_tensor_4d(work_ctx, GGML_TYPE_F32, W, H, C, 1);
         ggml_tensor_set_f32_randn(x_t, sd_ctx->sd->rng);
 
-        std::vector<float> sigmas = sd_ctx->sd->denoiser->schedule->get_sigmas(sample_steps);
+        std::vector<float> sigmas = sd_ctx->sd->denoiser->schedule->get_sigmas(sample_steps); // xzl: noise schedule
 
         struct ggml_tensor* x_0 = sd_ctx->sd->sample(work_ctx,
                                                      x_t,

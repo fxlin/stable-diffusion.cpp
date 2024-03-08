@@ -371,6 +371,7 @@ public:
         }
     }
 
+    // xzl: means building the compute graph ?? return the output tensor
     struct ggml_tensor* forward(struct ggml_context* ctx,
                                 struct ggml_tensor* x,
                                 struct ggml_tensor* timesteps,
@@ -593,6 +594,7 @@ struct UNetModel : public GGMLModule {
         return gf;
     }
 
+    // xzl: build graph & eval it .... on backend
     void compute(int n_threads,
                  struct ggml_tensor* x,
                  struct ggml_tensor* timesteps,
