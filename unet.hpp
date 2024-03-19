@@ -556,6 +556,7 @@ struct UNetModel : public GGMLModule {
         unet.get_param_tensors(tensors, prefix);
     }
 
+    // xzl: build the unet graph...
     struct ggml_cgraph* build_graph(struct ggml_tensor* x,
                                     struct ggml_tensor* timesteps,
                                     struct ggml_tensor* context,

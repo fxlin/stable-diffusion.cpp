@@ -857,6 +857,7 @@ public:
         }
     }
 
+    // xzl: eval a given graph... .which is constructed via @get_graph...
     void compute(get_graph_cb_t get_graph,
                  int n_threads,
                  bool free_compute_buffer_immediately = true,

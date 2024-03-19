@@ -1427,7 +1427,7 @@ sd_image_t* txt2img(sd_ctx_t* sd_ctx,
         sd_image_to_tensor(control_cond->data, image_hint); // xzl: make iput image to "imag_hint" tensor.
     }
 
-    std::vector<struct ggml_tensor*> final_latents;  // collect latents to decode   xzl: why a series ?
+    std::vector<struct ggml_tensor*> final_latents;  // collect latents to decode   xzl: why a series ? decode all intermediate latents?
     int C = 4;
     int W = width / 8;
     int H = height / 8;
