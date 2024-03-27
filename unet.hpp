@@ -592,6 +592,7 @@ struct UNetModel : public GGMLModule {
 
         ggml_build_forward_expand(gf, out);
 
+        ggml_graph_dump_dot(gf, NULL, "unet.dot");  // xzl add
         return gf;
     }
 

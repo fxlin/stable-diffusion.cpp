@@ -814,6 +814,7 @@ public:
 
 // ldm.modules.encoders.modules.FrozenCLIPEmbedder
 // Ref: https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/cad87bf4e3e0b0a759afa94e933527c3123d59bc/modules/sd_hijack_clip.py#L283
+// xzl: a "module" ... can be evaluated....
 struct FrozenCLIPEmbedderWithCustomWords : public GGMLModule {
     SDVersion version = VERSION_1_x;
     CLIPTokenizer tokenizer;
@@ -1131,6 +1132,7 @@ struct FrozenCLIPEmbedderWithCustomWords : public GGMLModule {
     }
 };
 
+// xzl: can be a mini ex showing how to construct a "module" from a model (blocks)... and eval it 
 struct FrozenCLIPVisionEmbedder : public GGMLModule {
     CLIPVisionModel vision_model;
 

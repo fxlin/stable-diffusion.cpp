@@ -524,6 +524,7 @@ __STATIC_INLINE__ struct ggml_tensor* ggml_nn_conv_3d_nx1x1(struct ggml_context*
 // k: [N * n_head, n_k, d_head]
 // v: [N * n_head, d_head, n_k]
 // return: [N * n_head, n_token, d_head]
+//      xzl: this is post proj. do sm(Q@K) then V
 __STATIC_INLINE__ struct ggml_tensor* ggml_nn_attention(struct ggml_context* ctx,
                                                         struct ggml_tensor* q,
                                                         struct ggml_tensor* k,
@@ -539,7 +540,7 @@ __STATIC_INLINE__ struct ggml_tensor* ggml_nn_attention(struct ggml_context* ctx
     if (mask) {
         kq = ggml_diag_mask_inf_inplace(ctx, kq, 0);
     }
-    kq = ggml_soft_max_inplace(ctx, kq);
+    kq = ggml_soft_max_inplace(ctx, kq);        // xzl: softmax....(inplace)
 
     struct ggml_tensor* kqv = ggml_mul_mat(ctx, v, kq);  // [N * n_head, n_token, d_head]
 #endif
@@ -704,6 +705,7 @@ __STATIC_INLINE__ struct ggml_tensor* ggml_nn_timestep_embedding(
 #define MAX_PARAMS_TENSOR_NUM 10240
 #define MAX_GRAPH_SIZE 10240
 
+// xzl: wraps arpund needed buffer, ctx, and eval func
 struct GGMLModule {
 protected:
     typedef std::function<struct ggml_cgraph*()> get_graph_cb_t;
@@ -903,8 +905,10 @@ public:
     }
 };
 
+// xzl: the parent class of all model building blocks 
 class GGMLBlock {
 private:
+    // xzl: temp ctx for evaluation??
     static char temp_buffer[1024 * 1024 * 10];
     ggml_context* get_temp_ctx() {
         struct ggml_init_params params;
@@ -920,7 +924,7 @@ private:
 protected:
     typedef std::unordered_map<std::string, struct ggml_tensor*> ParameterMap;
     typedef std::unordered_map<std::string, std::shared_ptr<GGMLBlock>> GGMLBlockMap;
-    GGMLBlockMap blocks;
+    GGMLBlockMap blocks;        // xzl: a list of ptrs... to other blocks?
     ParameterMap params;
 
     void init_blocks(struct ggml_context* ctx, ggml_type wtype) {
@@ -972,6 +976,7 @@ public:
         return mem_size;
     }
 
+    // xzl: recursive... get a list of name,tensor
     void get_param_tensors(std::map<std::string, struct ggml_tensor*>& tensors, std::string prefix = "") {
         if (prefix.size() > 0) {
             prefix = prefix + ".";
