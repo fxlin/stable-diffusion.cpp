@@ -67,8 +67,8 @@ public:
     int n_threads            = -1;
     float scale_factor       = 0.18215f;
 
-    std::shared_ptr<FrozenCLIPEmbedderWithCustomWords> cond_stage_model;
-    std::shared_ptr<FrozenCLIPVisionEmbedder> clip_vision;  // for svd
+    std::shared_ptr<FrozenCLIPEmbedderWithCustomWords> cond_stage_model;            // xzl: for condition (pos, eg...)
+    std::shared_ptr<FrozenCLIPVisionEmbedder> clip_vision;  // for svd              xzl: svd - video
     std::shared_ptr<UNetModel> diffusion_model;     // xzl: THE model...
     std::shared_ptr<AutoEncoderKL> first_stage_model;
     std::shared_ptr<TinyAutoEncoder> tae_first_stage;
@@ -205,6 +205,7 @@ public:
             diffusion_model->alloc_params_buffer();
             diffusion_model->get_param_tensors(tensors, "model.diffusion_model");
 
+            // xzl: 1st stage... auto encoder...
             ggml_type vae_type = model_data_type;
             if (version == VERSION_XL) {
                 vae_type = GGML_TYPE_F32;  // avoid nan, not work...
@@ -218,6 +219,7 @@ public:
                 tae_first_stage = std::make_shared<TinyAutoEncoder>(backend, model_data_type, vae_decode_only);
             }
 
+            // xzl: control net.... (optional)
             if (control_net_path.size() > 0) {
                 ggml_backend_t cn_backend = NULL;
                 if (control_net_cpu && !ggml_backend_is_cpu(backend)) {
@@ -651,6 +653,7 @@ public:
         return {c_crossattn, c_concat, y};
     }
 
+    // xzl: the main sample loop...
     ggml_tensor* sample(ggml_context* work_ctx,
                         ggml_tensor* x_t,
                         ggml_tensor* noise,

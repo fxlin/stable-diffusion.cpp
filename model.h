@@ -20,7 +20,7 @@ enum SDVersion {
     VERSION_1_x,
     VERSION_2_x,
     VERSION_XL,
-    VERSION_SVD,
+    VERSION_SVD,            // xzl: video diffusion
     VERSION_COUNT,
 };
 

@@ -127,6 +127,7 @@ public:
             auto block     = std::dynamic_pointer_cast<BasicTransformerBlock>(blocks[transformer_name]);
             auto mix_block = std::dynamic_pointer_cast<BasicTransformerBlock>(blocks[time_stack_name]);
 
+            // xzl: video... has transformer
             x = block->forward(ctx, x, spatial_context);  // [N, h * w, inner_dim]
 
             // in_channels == inner_dim
@@ -171,8 +172,8 @@ protected:
     int in_channels                        = 4;
     int out_channels                       = 4;
     int num_res_blocks                     = 2;
-    std::vector<int> attention_resolutions = {4, 2, 1};
-    std::vector<int> channel_mult          = {1, 2, 4, 4};
+    std::vector<int> attention_resolutions = {4, 2, 1};     
+    std::vector<int> channel_mult          = {1, 2, 4, 4};      // xzl: whats this? multipolier?
     std::vector<int> transformer_depth     = {1, 1, 1, 1};
     int time_embed_dim                     = 1280;  // model_channels*4
     int num_heads                          = 8;
@@ -307,7 +308,7 @@ public:
                 std::string name = "output_blocks." + std::to_string(output_block_idx) + ".0";
                 blocks[name]     = std::shared_ptr<GGMLBlock>(get_resblock(ch + ich, time_embed_dim, mult * model_channels));
 
-                ch                = mult * model_channels;
+                ch                = mult * model_channels;          // xzl: mult indeed = multipliers...
                 int up_sample_idx = 1;
                 if (std::find(attention_resolutions.begin(), attention_resolutions.end(), ds) != attention_resolutions.end()) {
                     int n_head = num_heads;
@@ -371,7 +372,7 @@ public:
         }
     }
 
-    // xzl: means building the compute graph ?? return the output tensor
+    // xzl: building the compute graph.... return the output tensor
     struct ggml_tensor* forward(struct ggml_context* ctx,
                                 struct ggml_tensor* x,
                                 struct ggml_tensor* timesteps,
@@ -437,6 +438,7 @@ public:
         // input block 0
         auto h = input_blocks_0_0->forward(ctx, x);
 
+        // xzl: below input blocks, mid blocks, output blocks... each may have attn. 
         ggml_set_name(h, "bench-start");
         hs.push_back(h);
         // input block 1-11
@@ -591,8 +593,12 @@ struct UNetModel : public GGMLModule {
                                                control_strength);
 
         ggml_build_forward_expand(gf, out);
-
-        ggml_graph_dump_dot(gf, NULL, "unet.dot");  // xzl add
+        {static int once = 1; 
+            if (once == 1) { 
+                once = 0;
+                ggml_graph_dump_dot(gf, NULL, "unet.dot"); // xzladd    dot failed to convert to a png...
+            }
+        }
         return gf;
     }
 
@@ -620,7 +626,7 @@ struct UNetModel : public GGMLModule {
         GGMLModule::compute(get_graph, n_threads, false, output, output_ctx);
     }
 
-    void test() {
+    void test() {       // xzl: can be useful
         struct ggml_init_params params;
         params.mem_size   = static_cast<size_t>(10 * 1024 * 1024);  // 10 MB
         params.mem_buffer = NULL;

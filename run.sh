@@ -1,0 +1,1 @@
+build/bin/sd -m assets/sd-v1-4.ckpt -p "a lovely cat" --threads 10

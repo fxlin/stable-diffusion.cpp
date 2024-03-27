@@ -721,6 +721,8 @@ protected:
     ggml_type wtype        = GGML_TYPE_F32;
     ggml_backend_t backend = NULL;
 
+    int graph_print_count = 0;  // xzladd
+
     void alloc_params_ctx() {
         struct ggml_init_params params;
         params.mem_size   = static_cast<size_t>(MAX_PARAMS_TENSOR_NUM * ggml_tensor_overhead());
@@ -886,7 +888,11 @@ public:
         ggml_backend_graph_compute(backend, gf);
 
 #ifdef GGML_PERF
-        ggml_graph_print(gf);
+        // xzladd            
+        if (this->graph_print_count == 0) {
+            ggml_graph_print(gf);
+            this->graph_print_count++; 
+        }
 #endif
 
         if (output != NULL) {
