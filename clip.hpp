@@ -262,6 +262,7 @@ public:
         return tokens;
     }
 
+    // xzl: encode textual prmopt
     std::vector<int> encode(std::string text, on_new_token_cb_t on_new_token_cb) {
         std::string original_text = text;
         std::vector<int32_t> bpe_tokens;
@@ -423,7 +424,8 @@ std::vector<std::pair<std::string, float>> parse_prompt_attention(const std::str
 /*================================================ FrozenCLIPEmbedder ================================================*/
 
 // Ref: https://github.com/huggingface/transformers/blob/main/src/transformers/models/clip/modeling_clip.py
-
+// xzl: text to embedding...
+//          construct the embedder... from bottom up
 struct CLIPMLP : public GGMLBlock {
 protected:
     bool use_gelu;
@@ -814,6 +816,7 @@ public:
 
 // ldm.modules.encoders.modules.FrozenCLIPEmbedder
 // Ref: https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/cad87bf4e3e0b0a759afa94e933527c3123d59bc/modules/sd_hijack_clip.py#L283
+// xzl: used as "condition" model...
 struct FrozenCLIPEmbedderWithCustomWords : public GGMLModule {
     SDVersion version = VERSION_1_x;
     CLIPTokenizer tokenizer;
@@ -1007,7 +1010,7 @@ struct FrozenCLIPEmbedderWithCustomWords : public GGMLModule {
         struct ggml_tensor* hidden_states = forward(compute_ctx, input_ids, input_ids2, embeddings, max_token_idx, return_pooled);
 
         ggml_build_forward_expand(gf, hidden_states);
-
+        ggml_graph_dump_dot(gf, NULL, "clip.dot"); // xzladd    
         return gf;
     }
 
@@ -1167,6 +1170,7 @@ struct FrozenCLIPVisionEmbedder : public GGMLModule {
         return gf;
     }
 
+    // lazyily construct graph when compute()
     void compute(const int n_threads,
                  ggml_tensor* pixel_values,
                  ggml_tensor** output,

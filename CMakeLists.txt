@@ -58,6 +58,8 @@ if(SD_FLASH_ATTN)
     add_definitions(-DSD_USE_FLASH_ATTENTION)
 endif()
 
+add_definitions(-DGGML_PERF)    # xzl
+
 set(SD_LIB stable-diffusion)
 
 file(GLOB SD_LIB_SOURCES 
